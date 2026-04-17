@@ -110,11 +110,10 @@ GitHub Actions only runs workflows from `.github/workflows/`.
 
 To use this pipeline in practice:
 
-1. copy `CICD/github-actions.yml` to `.github/workflows/deploy.yml`
-2. create the required GitHub Secrets
-3. create the required GitHub Variables
-4. create the Amazon ECR repository
-5. push to `main` or trigger the workflow manually
+1. create the required GitHub Secrets
+2. create the required GitHub Variables
+3. create the Amazon ECR repository
+4. push to `main` or trigger the workflow manually
 
 ## Improvements
 
