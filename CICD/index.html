@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blys</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #f7f4ea, #dbe9f4);
+      color: #13293d;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    main {
+      max-width: 42rem;
+      padding: 3rem;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 24px 60px rgba(19, 41, 61, 0.12);
+    }
+
+    h1 {
+      margin: 0 0 1rem;
+      font-size: 2.5rem;
+    }
+
+    p {
+      margin: 0.4rem 0;
+      line-height: 1.6;
+    }
+
+    .tag {
+      display: inline-block;
+      margin-bottom: 1rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      background: #13293d;
+      color: #fff;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="tag">Blys DevOps Challenge</span>
+    <h1>Hello World</h1>
+    <p>This container image is built by GitHub Actions, pushed to Amazon ECR, and deployed to Amazon ECS Fargate.</p>
+    <p>The service sits behind an Application Load Balancer in a multi-AZ VPC layout.</p>
+  </main>
+</body>
+</html>

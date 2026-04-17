@@ -1,0 +1,114 @@
+name: Build and Deploy to ECS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - CICD/**
+      - .github/workflows/github-actions.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blys-prod-deploy
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+  ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+  ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+  ECS_TASK_FAMILY: ${{ vars.ECS_TASK_FAMILY }}
+  CONTAINER_NAME: ${{ vars.CONTAINER_NAME }}
+  BUILD_CONTEXT: .
+  DOCKERFILE_PATH: ./Dockerfile
+
+jobs:
+  quality_gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Placeholder for automated testing or security scanning
+        run: |
+          echo "Reserved for automated testing, linting, or image scanning before deployment."
+          echo "Typical additions:trivy, semgrep, or npm test."
+
+  build_and_push:
+    name: Build and Push Image
+    runs-on: ubuntu-latest
+    needs: quality_gate
+    outputs:
+      image_uri: ${{ steps.publish.outputs.image_uri }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and publish image
+        id: publish
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker build \
+            --file "$DOCKERFILE_PATH" \
+            --tag "$IMAGE_URI" \
+            --tag "$ECR_REGISTRY/$ECR_REPOSITORY:latest" \
+            "$BUILD_CONTEXT"
+          docker push "$IMAGE_URI"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+          echo "image_uri=$IMAGE_URI" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy to ECS Service
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    environment: production
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download active task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "$ECS_TASK_FAMILY" \
+            --query taskDefinition \
+            --output json \
+            > task-definition.json
+
+      - name: Inject new image into task definition
+        id: render-task
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ needs.build_and_push.outputs.image_uri }}
+
+      - name: Deploy updated task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-task.outputs.task-definition }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          service: ${{ env.ECS_SERVICE }}
+          wait-for-service-stability: true

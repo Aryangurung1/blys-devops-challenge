@@ -1,0 +1,7 @@
+# aws_region        = "ap-south-1"
+# project_name      = "blys-poc"
+# environment       = "prod"
+# nat_gateway_mode  = "single"
+# secret_value      = "devops"
+
+# allowed_ingress_cidrs = ["0.0.0.0/0"]
